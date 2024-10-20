@@ -18,6 +18,7 @@ export default function ShoppingCart() {
     useEffect(() => {
         getCart().then(setCart)
     }, []);
+
     const handleUpdateQuantity = async (id: string, change: number) => {
         updateOptimisticCart({id, change})
         const updatedCart = await updateQuantity(id, change)
