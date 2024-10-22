@@ -6,7 +6,10 @@ async function Page({searchParams}) {
     const data = await like.json();
     return (
         <div>
+        
             <Search route='/search'/>
+            {/* eslint-disable-next-line react/jsx-no-undef */}
+
             {
                 data.map(({id, title}: { id: React.Key; title: string }) => (
                     <Card key={id} className="row max-w-md">
