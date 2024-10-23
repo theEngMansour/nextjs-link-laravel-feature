@@ -6,7 +6,7 @@ async function Page({searchParams}) {
     const data = await like.json();
     return (
         <div>
-        
+
             <Search route='/search'/>
             {/* eslint-disable-next-line react/jsx-no-undef */}
 
