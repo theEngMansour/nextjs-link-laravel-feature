@@ -1,6 +1,8 @@
 "use client"
 import React, {useRef, useState} from 'react'
 import {Document, Page, pdfjs} from 'react-pdf'
+import html2canvas from 'html2canvas';
+
 import Draggable from 'react-draggable'
 import {QRCodeSVG} from 'qrcode.react'
 import {PDFDocument} from 'pdf-lib'
@@ -23,6 +25,40 @@ export default function PDFQRPlacer() {
     const qrRef = useRef<SVGSVGElement>(null)
     const logoRef = useRef<HTMLImageElement>(null)
     const pdfRef = useRef<HTMLDivElement>(null)
+
+
+    const save = async () => {
+        if (!pdfRef.current) return;
+
+
+        const canvas = await html2canvas(pdfRef.current);
+        const imgData = canvas.toDataURL('image/png');
+
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage();
+
+
+        const pngImage = await pdfDoc.embedPng(imgData);
+        const {width, height} = page.getSize();
+
+        const imgWidth = width;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        page.drawImage(pngImage, {
+            x: 0,
+            y: height - imgHeight,
+            width: imgWidth,
+            height: imgHeight,
+        });
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], {type: 'application/pdf'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'document.pdf';
+        link.click();
+    };
+
 
     const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files
@@ -72,21 +108,20 @@ export default function PDFQRPlacer() {
 
         // Correct Logo Position
         const logoX = logoPosition.x * scaleFactorX;
-        const logoY = height - logoPosition.y;  // تعديل بسيط لموقع الشعار
+        const logoY = height - (logoPosition.y * scaleFactorY + logoContainer.height * scaleFactorY);
 
         firstPage.drawImage(qrPngImage, {
             x: qrX,
             y: qrY,
-            width: 150,
-            height: 150,
+            width: 100 * scaleFactorX,  // Adjust size scaling
+            height: 100 * scaleFactorY, // Adjust size scaling
         });
 
         firstPage.drawImage(logoPngImage, {
             x: logoX,
             y: logoY,
-            width: logoContainer.width,
-            height: logoContainer.height,
-
+            width: 100 * scaleFactorX,  // Adjust size scaling
+            height: 100 * scaleFactorY, // Adjust size scaling
         });
 
         const pdfBytes = await pdfDoc.save();
@@ -138,7 +173,7 @@ export default function PDFQRPlacer() {
     }
 
     return (
-        <Card className="w-full max-w-4xl mx-auto">
+        <Card className="w-full max-w-4xl mx-auto bg-red-900">
             <CardHeader>
                 <CardTitle>PDF QR Code & Logo Placer</CardTitle>
             </CardHeader>
@@ -160,15 +195,7 @@ export default function PDFQRPlacer() {
                         >
                             <Page pageNumber={currentPage} width={600}/>
                         </Document>
-                        <Draggable onDrag={handleDragQR} bounds="parent">
-                            <div className="absolute top-0 left-0 cursor-move">
-                                <QRCodeSVG
-                                    value="https://example.com"
-                                    size={100}
-                                    ref={qrRef}
-                                />
-                            </div>
-                        </Draggable>
+
                         <Draggable onDrag={handleDragLogo} bounds="parent">
                             <div className="absolute top-0 left-0 cursor-move">
                                 <img
@@ -176,6 +203,15 @@ export default function PDFQRPlacer() {
                                     alt="Logo"
                                     width={100}
                                     ref={logoRef}
+                                />
+                            </div>
+                        </Draggable>
+                        <Draggable onDrag={handleDragQR} bounds="parent">
+                            <div className="absolute top-0 right-0 left-0 cursor-move">
+                                <QRCodeSVG
+                                    value="https://example.com"
+                                    size={100}
+                                    ref={qrRef}
                                 />
                             </div>
                         </Draggable>
@@ -203,7 +239,9 @@ export default function PDFQRPlacer() {
                 <div className="mt-4">
                     <Button onClick={savePDF} disabled={!file}>
                         Save Modified PDF
-                    </Button>
+                    </Button> <Button onClick={save} disabled={!file}>
+                    Save PDF
+                </Button>
                 </div>
             </CardContent>
         </Card>
